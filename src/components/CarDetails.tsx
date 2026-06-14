@@ -83,12 +83,12 @@ export default function CarDetails({ carId, user, onClose, onUpdateSuccess, onDe
   };
 
   // Check role-based capabilities
-  const canSeePrices = user.role === "admin" || user.role === "acc";
-  const canModifyTech = user.role === "admin" || user.role === "tech" || user.role === "acc";
-  const canDeleteCar = user.role === "admin";
-  const canAddRepairs = user.role === "admin" || user.role === "tech" || user.role === "acc";
-  const canEditPrices = user.role === "admin" || user.role === "acc";
-  const isSalesPerson = user.role === "sales";
+  const canSeePrices = user.role === "admin" || user.role === "acc" || user.role === "sales";
+  const canModifyTech = user.role === "admin" || user.role === "tech" || user.role === "acc" || user.role === "sales";
+  const canDeleteCar = user.role === "admin" || user.role === "acc" || user.role === "sales";
+  const canAddRepairs = user.role === "admin" || user.role === "tech" || user.role === "acc" || user.role === "sales";
+  const canEditPrices = user.role === "admin" || user.role === "acc" || user.role === "sales";
+  const isSalesPerson = false; // Salesperson is no longer restricted, has same rights as accountant
 
   // Fetch specific car on mount or change
   useEffect(() => {

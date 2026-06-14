@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   Plus, Search, LogOut, CarFront, FileSpreadsheet, Users2, ShieldAlert,
-  Archive, CircleUser, HelpCircle, Activity, ChevronRight, UserPlus, RefreshCw
+  Archive, CircleUser, HelpCircle, Activity, ChevronRight, UserPlus, RefreshCw, Key
 } from "lucide-react";
 import { User, Car } from "./types";
 import Login from "./components/Login";
@@ -40,6 +40,20 @@ export default function App() {
   const [newTechName, setNewTechName] = useState("");
   const [techError, setTechError] = useState("");
   const [techSuccess, setTechSuccess] = useState("");
+
+  // Change Password States (For individual users)
+  const [showChangePwdModal, setShowChangePwdModal] = useState(false);
+  const [oldSelfPassword, setOldSelfPassword] = useState("");
+  const [newSelfPassword, setNewSelfPassword] = useState("");
+  const [confirmSelfPassword, setConfirmSelfPassword] = useState("");
+  const [changePwdError, setChangePwdError] = useState("");
+  const [changePwdSuccess, setChangePwdSuccess] = useState("");
+
+  // Admin Reset Password States (For resetting someone else's password as admin)
+  const [resettingUser, setResettingUser] = useState<User | null>(null);
+  const [newResetPassword, setNewResetPassword] = useState("");
+  const [resetPwdError, setResetPwdError] = useState("");
+  const [resetPwdSuccess, setResetPwdSuccess] = useState("");
 
   // Load and auto authenticate from localStorage
   useEffect(() => {
@@ -170,6 +184,79 @@ export default function App() {
   const handleCarDeleted = (carId: string) => {
     setCars(prev => prev.filter(c => c.id !== carId));
     setSelectedCarId(null);
+  };
+
+  const handleChangePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePwdError("");
+    setChangePwdSuccess("");
+
+    if (!oldSelfPassword || !newSelfPassword || !confirmSelfPassword) {
+      setChangePwdError("Vui lòng điền đầy đủ các thông tin.");
+      return;
+    }
+
+    if (newSelfPassword !== confirmSelfPassword) {
+      setChangePwdError("Xác nhận mật khẩu mới không khớp.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/users/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: currentUser?.id,
+          oldPassword: oldSelfPassword,
+          newPassword: newSelfPassword,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Có lỗi bất ngờ xảy ra.");
+      }
+
+      setChangePwdSuccess("Thay đổi mật khẩu thành công!");
+      setOldSelfPassword("");
+      setNewSelfPassword("");
+      setConfirmSelfPassword("");
+    } catch (err: any) {
+      setChangePwdError(err.message);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetPwdError("");
+    setResetPwdSuccess("");
+
+    if (!newResetPassword.trim()) {
+      setResetPwdError("Vui lòng nhập mật khẩu mới.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/users/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          adminId: currentUser?.id,
+          userId: resettingUser?.id,
+          newPassword: newResetPassword.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Có lỗi bất ngờ xảy ra.");
+      }
+
+      setResetPwdSuccess(`Đã reset thành công mật khẩu cho tài khoản "${resettingUser?.username}"!`);
+      setNewResetPassword("");
+    } catch (err: any) {
+      setResetPwdError(err.message);
+    }
   };
 
   // Admin section: create users
@@ -376,13 +463,32 @@ export default function App() {
               </div>
             </div>
             
-            <button
-              id="btn-logout"
-              onClick={handleLogout}
-              className="w-full text-center py-2 text-[10px] font-bold tracking-widest text-slate-400 hover:text-rose-400 hover:bg-rose-950/20 rounded-lg transition uppercase duration-150 cursor-pointer"
-            >
-              ĐĂNG XUẤT
-            </button>
+            <div className="flex flex-col space-y-1 mt-1">
+              <button
+                id="btn-trigger-change-pwd"
+                onClick={() => {
+                  setChangePwdError("");
+                  setChangePwdSuccess("");
+                  setOldSelfPassword("");
+                  setNewSelfPassword("");
+                  setConfirmSelfPassword("");
+                  setShowChangePwdModal(true);
+                }}
+                className="w-full text-center py-2 text-[10px] font-bold tracking-widest text-slate-400 hover:text-indigo-450 hover:bg-slate-800 rounded-lg transition uppercase duration-150 cursor-pointer flex items-center justify-center space-x-1.5"
+                title="Thay đổi mật khẩu tài khoản hiện tại"
+              >
+                <Key className="h-3 w-3" />
+                <span>ĐỔI MẬT KHẨU</span>
+              </button>
+              
+              <button
+                id="btn-logout"
+                onClick={handleLogout}
+                className="w-full text-center py-2 text-[10px] font-bold tracking-widest text-slate-400 hover:text-rose-450 hover:bg-rose-950/20 rounded-lg transition uppercase duration-150 cursor-pointer"
+              >
+                ĐĂNG XUẤT
+              </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -402,6 +508,20 @@ export default function App() {
             <span className="text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-100 px-2 py-1 rounded">
               {currentUser.name || currentUser.username}
             </span>
+            <button
+              onClick={() => {
+                setChangePwdError("");
+                setChangePwdSuccess("");
+                setOldSelfPassword("");
+                setNewSelfPassword("");
+                setConfirmSelfPassword("");
+                setShowChangePwdModal(true);
+              }}
+              className="p-1 text-slate-400 hover:text-indigo-600 cursor-pointer"
+              title="Đổi mật khẩu"
+            >
+              <Key className="h-4 w-4" />
+            </button>
             <button 
               onClick={handleLogout} 
               className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
@@ -558,13 +678,27 @@ export default function App() {
                                 {usr.id === currentUser.id ? (
                                   <span className="text-slate-400 text-[10px] italic font-semibold">Tài khoản chính</span>
                                 ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteUser(usr)}
-                                    className="px-2.5 py-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-transparent rounded transition cursor-pointer"
-                                  >
-                                    Xóa
-                                  </button>
+                                  <div className="flex flex-col items-center justify-center space-y-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteUser(usr)}
+                                      className="px-2 py-0.5 text-[10px] font-bold text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
+                                    >
+                                      Xóa
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setResetPwdError("");
+                                        setResetPwdSuccess("");
+                                        setNewResetPassword("");
+                                        setResettingUser(usr);
+                                      }}
+                                      className="px-2 py-0.5 text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 rounded transition cursor-pointer"
+                                    >
+                                      Reset Pass
+                                    </button>
+                                  </div>
                                 )}
                               </td>
                             </tr>
@@ -778,6 +912,156 @@ export default function App() {
           onClose={() => setShowAddModal(false)}
           onSuccess={handleCarAdded}
         />
+      )}
+
+      {/* ==================== CHANGE PASSWORD MODAL (SELF) ==================== */}
+      {showChangePwdModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" id="modal-change-password-self">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-150 max-w-sm w-full p-6 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center">
+                <Key className="h-4.5 w-4.5 mr-2 text-indigo-600" />
+                <span>Đổi mật khẩu tài khoản</span>
+              </h3>
+              <button 
+                onClick={() => setShowChangePwdModal(false)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
+              >
+                X
+              </button>
+            </div>
+
+            <form onSubmit={handleChangePasswordSubmit} className="space-y-4">
+              {changePwdError && (
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-lg text-xs font-semibold text-center">
+                  {changePwdError}
+                </div>
+              )}
+              {changePwdSuccess && (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 p-3 rounded-lg text-xs font-semibold text-center">
+                  {changePwdSuccess}
+                </div>
+              )}
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mật khẩu hiện tại</label>
+                <input
+                  type="password"
+                  required
+                  value={oldSelfPassword}
+                  onChange={(e) => setOldSelfPassword(e.target.value)}
+                  placeholder="Nhập mật khẩu cũ của bạn"
+                  className="w-full mt-1 px-3 py-2 border border-slate-200 bg-slate-50/50 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mật khẩu mới</label>
+                <input
+                  type="password"
+                  required
+                  value={newSelfPassword}
+                  onChange={(e) => setNewSelfPassword(e.target.value)}
+                  placeholder="Mật khẩu mới mong muốn"
+                  className="w-full mt-1 px-3 py-2 border border-slate-200 bg-slate-50/50 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Xác nhận mật khẩu mới</label>
+                <input
+                  type="password"
+                  required
+                  value={confirmSelfPassword}
+                  onChange={(e) => setConfirmSelfPassword(e.target.value)}
+                  placeholder="Nhập lại mật khẩu mới"
+                  className="w-full mt-1 px-3 py-2 border border-slate-200 bg-slate-50/50 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowChangePwdModal(false)}
+                  className="px-4 py-2 border border-slate-205 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-50 cursor-pointer"
+                >
+                  Đóng
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-550 text-white rounded-lg text-xs font-bold cursor-pointer"
+                >
+                  Cập nhật
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== RESET PASSWORD MODAL (ADMIN RESET FOR USER) ==================== */}
+      {resettingUser && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" id="modal-reset-password-admin">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-150 max-w-sm w-full p-6 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-black text-rose-600 uppercase tracking-wider flex items-center">
+                <ShieldAlert className="h-4.5 w-4.5 mr-2 text-rose-650 animate-pulse" />
+                <span>Khôi Phục Mật Khẩu</span>
+              </h3>
+              <button 
+                onClick={() => setResettingUser(null)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
+              >
+                X
+              </button>
+            </div>
+
+            <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+              <div className="p-3 bg-rose-50 border border-rose-100 text-rose-800 rounded-xl text-[11px] leading-relaxed">
+                Đang đặt lại mật khẩu cho tài khoản <strong>{resettingUser.name || resettingUser.username}</strong> ({resettingUser.username}). Quản trị viên không cần mật khẩu hiện tại.
+              </div>
+
+              {resetPwdError && (
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-lg text-xs font-semibold text-center">
+                  {resetPwdError}
+                </div>
+              )}
+              {resetPwdSuccess && (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 p-3 rounded-lg text-xs font-semibold text-center">
+                  {resetPwdSuccess}
+                </div>
+              )}
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mật khẩu mới thay thế</label>
+                <input
+                  type="text"
+                  required
+                  value={newResetPassword}
+                  onChange={(e) => setNewResetPassword(e.target.value)}
+                  placeholder="Điền mật khẩu mới cưỡng chế"
+                  className="w-full mt-1 px-3 py-2 border border-slate-200 bg-slate-50/50 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-rose-500 font-mono font-bold text-rose-700"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setResettingUser(null)}
+                  className="px-4 py-2 border border-slate-205 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-50 cursor-pointer"
+                >
+                  Đóng
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-550 text-white rounded-lg text-xs font-bold cursor-pointer"
+                >
+                  Cưỡng Chế Đổi
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

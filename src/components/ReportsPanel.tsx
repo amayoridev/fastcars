@@ -9,7 +9,7 @@ export default function ReportsPanel({ userRole }: ReportsPanelProps) {
   const [selectedDay, setSelectedDay] = useState(new Date().toISOString().split("T")[0]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7)); // YYYY-MM
 
-  const canExport = userRole === "admin" || userRole === "acc";
+  const canExport = userRole === "admin" || userRole === "acc" || userRole === "sales";
 
   const handleExport = (type: "all" | "day" | "month") => {
     let url = "/api/export/summary?";

@@ -14,7 +14,7 @@ export default function CarList({ cars, userRole, onSelectCar, onOpenAddModal }:
   const [filterStatus, setFilterStatus] = useState<string>("Tất cả");
   const [sortBy, setSortBy] = useState<string>("newest"); // newest, oldest, stockDays, repairCost
 
-  const canAddCars = userRole === "admin" || userRole === "acc";
+  const canAddCars = userRole === "admin" || userRole === "acc" || userRole === "sales";
 
   // Filter cars list
   const filteredCars = cars.filter(car => {

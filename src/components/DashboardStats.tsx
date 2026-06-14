@@ -8,7 +8,7 @@ interface DashboardStatsProps {
 
 export default function DashboardStats({ cars, userRole }: DashboardStatsProps) {
   // Safe financial filters
-  const canSeePrices = userRole === "admin" || userRole === "acc";
+  const canSeePrices = userRole === "admin" || userRole === "acc" || userRole === "sales";
 
   // Counts
   const totalCars = cars.length;
