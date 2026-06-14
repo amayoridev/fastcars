@@ -633,15 +633,6 @@ export default function CarDetails({ carId, user, onClose, onUpdateSuccess, onDe
                           />
                         </div>
                       </div>
-
-                      {canSeePrices && salePrice && (
-                        <div className="pt-2 text-xs text-sky-900 border-t border-sky-150 flex justify-between font-bold">
-                          <span>LỢI NHUẬN KHÁCH HÀNG:</span>
-                          <span>
-                            {formatCurrency(parseFloat(salePrice) - (car.costs?.totalCost || 0))}
-                          </span>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
