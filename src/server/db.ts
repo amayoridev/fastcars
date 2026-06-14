@@ -136,7 +136,7 @@ class DBManager {
 
     // Check cars
     const carsCount = await db.collection("cars").countDocuments();
-    if (carsCount === 0) {
+    if (carsCount === 0 && SEEDED_CARS.length > 0) {
       const mongoSeeded = SEEDED_CARS.map(c => {
         const { id, ...rest } = c;
         return { ...rest, _id: id };
@@ -147,7 +147,7 @@ class DBManager {
 
     // Check technicians
     const techsCount = await db.collection("technicians").countDocuments();
-    if (techsCount === 0) {
+    if (techsCount === 0 && SEEDED_TECHNICIANS.length > 0) {
       await db.collection("technicians").insertMany(SEEDED_TECHNICIANS.map(t => ({ name: t.name, _id: t.id } as any)));
       console.log("🌱 Seeded technicians collection in MongoDB.");
     }
