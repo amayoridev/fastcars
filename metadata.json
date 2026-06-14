@@ -1,0 +1,6 @@
+{
+  "name": "Car Repair & Stock Manager",
+  "description": "Hệ thống quản lý nhập kho, kiểm định tình trạng, tính toán chi phí đồng sơn và phụ tùng, tự động cộng dồn ngày tồn kho và xuất báo cáo Excel cho xe cũ.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
