@@ -8,7 +8,7 @@ import { db, Car, User, RepairItem, Technician } from "./src/server/db.js";
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   // Use JSON and URL encoded body parsers
   app.use(express.json());
@@ -191,6 +191,57 @@ async function startServer() {
       res.json({ success: true, message: "Xóa tài khoản thành công." });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Change password for individual users
+  app.post("/api/users/change-password", async (req, res) => {
+    try {
+      const { userId, oldPassword, newPassword } = req.body;
+      if (!userId || !oldPassword || !newPassword) {
+        return res.status(400).json({ error: "Vui lòng nhập đầy đủ thông tin: mật khẩu cũ và mật khẩu mới." });
+      }
+
+      const users = await db.getUsers();
+      const u = users.find(x => x.id === userId);
+      if (!u) {
+        return res.status(404).json({ error: "Không tìm thấy người dùng." });
+      }
+
+      if (u.passwordHash !== oldPassword) {
+        return res.status(400).json({ error: "Mật khẩu cũ không chính xác." });
+      }
+
+      await db.updateUser(userId, { passwordHash: newPassword });
+      res.json({ success: true, message: "Đổi mật khẩu thành công!" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Lỗi đổi mật khẩu." });
+    }
+  });
+
+  // Reset password (Admin only action)
+  app.post("/api/users/reset-password", async (req, res) => {
+    try {
+      const { adminId, userId, newPassword } = req.body;
+      if (!adminId || !userId || !newPassword) {
+        return res.status(400).json({ error: "Thiếu thông tin người dùng hoặc mật khẩu mới." });
+      }
+
+      const users = await db.getUsers();
+      const adminUser = users.find(u => u.id === adminId);
+      if (!adminUser || adminUser.role !== "admin") {
+        return res.status(403).json({ error: "Bạn không có quyền thực hiện hành động này!" });
+      }
+
+      const targetUser = users.find(u => u.id === userId);
+      if (!targetUser) {
+        return res.status(404).json({ error: "Không tìm thấy người dùng cần reset mật khẩu." });
+      }
+
+      await db.updateUser(userId, { passwordHash: newPassword });
+      res.json({ success: true, message: `Đã reset thành công mật khẩu cho tài khoản ${targetUser.username}!` });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Lỗi reset mật khẩu." });
     }
   });
 
