@@ -47,6 +47,12 @@ export default function DashboardStats({ cars, userRole }: DashboardStatsProps) 
   // Warning stock (unsold cars stocked > 30 days)
   const warningStockCount = inStockUnsold.filter(c => c.stockDays > 30).length;
 
+  // Cars sold this month
+  const currentYm = new Date().toISOString().substring(0, 7); // Format: "YYYY-MM"
+  const soldThisMonthCount = cars.filter(c => 
+    c.status === "Đã bán" && c.saleDate && c.saleDate.startsWith(currentYm)
+  ).length;
+
   // Helper format currency
   const formatCurrency = (amt: number) => {
     return amt.toLocaleString("vi-VN") + " đ";
@@ -119,55 +125,100 @@ export default function DashboardStats({ cars, userRole }: DashboardStatsProps) 
             <span>Phân bố trạng thái kho xe ({inStockUnsold.length} xe đang xử lý)</span>
           </h4>
 
-          <div className="space-y-4">
-            {/* Kho */}
-            <div>
-              <div className="flex justify-between items-center text-xs text-slate-600 mb-1.5">
-                <span className="font-bold uppercase tracking-wide flex items-center text-slate-500">
-                  <Archive className="h-3.5 w-3.5 mr-1.5 text-slate-400" />
-                  Vừa về kho (Chưa sửa)
-                </span>
-                <span className="font-bold text-slate-800">{inStockCount} xe ({inStockUnsold.length ? Math.round((inStockCount / inStockUnsold.length) * 100) : 0}%)</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Progress Bars */}
+            <div className="space-y-4">
+              {/* Kho */}
+              <div>
+                <div className="flex justify-between items-center text-xs text-slate-600 mb-1.5">
+                  <span className="font-bold uppercase tracking-wide flex items-center text-slate-500">
+                    <Archive className="h-3.5 w-3.5 mr-1.5 text-slate-400" />
+                    Vừa về kho (Chưa sửa)
+                  </span>
+                  <span className="font-bold text-slate-800">{inStockCount} xe ({inStockUnsold.length ? Math.round((inStockCount / inStockUnsold.length) * 100) : 0}%)</span>
+                </div>
+                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/55">
+                  <div 
+                    className="h-full bg-slate-400 rounded-full transition-all duration-500"
+                    style={{ width: `${inStockUnsold.length ? (inStockCount / inStockUnsold.length) * 100 : 0}%` }}
+                  ></div>
+                </div>
               </div>
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/55">
-                <div 
-                  className="h-full bg-slate-400 rounded-full transition-all duration-500"
-                  style={{ width: `${inStockUnsold.length ? (inStockCount / inStockUnsold.length) * 100 : 0}%` }}
-                ></div>
+
+              {/* Đang sửa */}
+              <div>
+                <div className="flex justify-between items-center text-xs text-slate-600 mb-1.5">
+                  <span className="font-bold uppercase tracking-wide flex items-center text-amber-600">
+                    <Activity className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
+                    Đang dọn dẹp / Sửa chữa
+                  </span>
+                  <span className="font-bold text-slate-800">{repairingCount} xe ({inStockUnsold.length ? Math.round((repairingCount / inStockUnsold.length) * 100) : 0}%)</span>
+                </div>
+                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/55">
+                  <div 
+                    className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                    style={{ width: `${inStockUnsold.length ? (repairingCount / inStockUnsold.length) * 100 : 0}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Đã sửa */}
+              <div>
+                <div className="flex justify-between items-center text-xs text-slate-600 mb-1.5">
+                  <span className="font-bold uppercase tracking-wide flex items-center text-emerald-600">
+                    <CheckCircle className="h-3.5 w-3.5 mr-1.5 text-emerald-500" />
+                    Đã hoàn thiện - Chờ bán
+                  </span>
+                  <span className="font-bold text-slate-800">{finishedCount} xe ({inStockUnsold.length ? Math.round((finishedCount / inStockUnsold.length) * 100) : 0}%)</span>
+                </div>
+                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/55">
+                  <div 
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                    style={{ width: `${inStockUnsold.length ? (finishedCount / inStockUnsold.length) * 100 : 0}%` }}
+                  ></div>
+                </div>
               </div>
             </div>
 
-            {/* Đang sửa */}
-            <div>
-              <div className="flex justify-between items-center text-xs text-slate-600 mb-1.5">
-                <span className="font-bold uppercase tracking-wide flex items-center text-amber-600">
-                  <Activity className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
-                  Đang dọn dẹp / Sửa chữa
-                </span>
-                <span className="font-bold text-slate-800">{repairingCount} xe ({inStockUnsold.length ? Math.round((repairingCount / inStockUnsold.length) * 100) : 0}%)</span>
-              </div>
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/55">
-                <div 
-                  className="h-full bg-amber-500 rounded-full transition-all duration-500"
-                  style={{ width: `${inStockUnsold.length ? (repairingCount / inStockUnsold.length) * 100 : 0}%` }}
-                ></div>
-              </div>
-            </div>
+            {/* Sales Stats Section */}
+            <div className="space-y-4 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6 flex flex-col justify-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center mb-1">
+                <TrendingUp className="h-3.5 w-3.5 mr-1 text-emerald-500" />
+                Hiệu suất bán hàng
+              </span>
+              
+              <div className="grid grid-cols-2 gap-3">
+                {/* Monthly Sales Card */}
+                <div className="bg-emerald-50/60 border border-emerald-100/85 p-3.5 rounded-xl transition hover:bg-emerald-55/60">
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block leading-tight">
+                    Xe bán trong tháng
+                  </span>
+                  <div className="flex items-baseline mt-1 space-x-1">
+                    <span className="text-2xl font-black text-emerald-900 font-sans">
+                      {soldThisMonthCount}
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-600">xe</span>
+                  </div>
+                  <span className="text-[9px] font-medium text-emerald-600 block mt-1">
+                    Tháng {new Date().getMonth() + 1}/{new Date().getFullYear()}
+                  </span>
+                </div>
 
-            {/* Đã sửa */}
-            <div>
-              <div className="flex justify-between items-center text-xs text-slate-600 mb-1.5">
-                <span className="font-bold uppercase tracking-wide flex items-center text-emerald-600">
-                  <CheckCircle className="h-3.5 w-3.5 mr-1.5 text-emerald-500" />
-                  Đã hoàn thiện - Chờ bán
-                </span>
-                <span className="font-bold text-slate-800">{finishedCount} xe ({inStockUnsold.length ? Math.round((finishedCount / inStockUnsold.length) * 100) : 0}%)</span>
-              </div>
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/55">
-                <div 
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                  style={{ width: `${inStockUnsold.length ? (finishedCount / inStockUnsold.length) * 100 : 0}%` }}
-                ></div>
+                {/* Total Sales Card */}
+                <div className="bg-slate-50 border border-slate-200/60 p-3.5 rounded-xl transition hover:bg-slate-100/50">
+                  <span className="text-[10px] font-bold text-slate-650 uppercase tracking-wider block leading-tight">
+                    Tổng số xe đã bán
+                  </span>
+                  <div className="flex items-baseline mt-1 space-x-1">
+                    <span className="text-2xl font-black text-slate-800 font-sans">
+                      {soldCount}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500">xe</span>
+                  </div>
+                  <span className="text-[9px] font-medium text-slate-400 block mt-1">
+                    Tích lũy từ trước đến nay
+                  </span>
+                </div>
               </div>
             </div>
           </div>
